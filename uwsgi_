@@ -5,6 +5,7 @@ import sys
 import json
 import socket
 import psutil
+import subprocess
 from itertools import izip_longest
 
 
@@ -80,10 +81,14 @@ def get_uwsgi_processes(apps):
     Adds two items in each app: master_process (a Process object)
     and worker_processes (a list of Process objects).
     """
+    a = subprocess.Popen("supervisorctl pid uwsgi", shell=True, stdout=subprocess.PIPE).stdout.read()
     master_processes = []
     for p in psutil.process_iter():
-        if p.cmdline[0] == 'uWSGI master':
-            master_processes.append(p)
+        try:
+            if p.pid == int(a):
+                master_processes.append(p)
+        except:
+            pass
     for app in apps:
         app['master_process'] = get_master(app, master_processes)
         app['worker_processes'] = app['master_process'].get_children()
